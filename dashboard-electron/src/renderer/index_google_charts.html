@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!--    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"/>-->
+    <!--    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'"/>-->
+    <!--    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />-->
+    <title>Arduino Nano 33 Ble Sense Dashboard</title>
+    <!--    <script src="https://d3js.org/d3.v6.min.js"></script>-->
+    <!--    <script src="js/epoch.min.js"></script>-->
+    <!--    <link rel="stylesheet" type="text/css" href="css/epoch.min.css">-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+      html, body, .grid-container {
+        height: 100%;
+        margin: 0;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+        gap: 0px 0px;
+        grid-template-areas:
+          "header header header"
+          "sidebar connection_bar connection_bar"
+          "sidebar temp_value temp_graph"
+          "sidebar pressure_value pressure_graph"
+          "sidebar humidity_value humidity_graph"
+          "sidebar gesture_value gesture_graph"
+          "sidebar proximity_value proximity_graph"
+          "sidebar imu_graph imu_graph"
+          "sidebar microphone_graph microphone_graph";
+      }
+
+      .header {
+        grid-area: header;
+        border: 1px solid black;
+      }
+
+      .connection_bar {
+        grid-area: connection_bar;
+        border: 1px solid green;
+      }
+
+      .temp_value {
+        grid-area: temp_value;
+        border: 1px solid red;
+      }
+
+      .temp_graph {
+        grid-area: temp_graph;
+        border: 1px solid red;
+      }
+
+      .pressure_value {
+        grid-area: pressure_value;
+        border: 1px solid blue;
+      }
+
+      .pressure_graph {
+        grid-area: pressure_graph;
+        border: 1px solid blue;
+      }
+
+      .humidity_value {
+        grid-area: humidity_value;
+      }
+
+      .humidity_graph {
+        grid-area: humidity_graph;
+      }
+
+      .gesture_value {
+        grid-area: gesture_value;
+      }
+
+      .gesture_graph {
+        grid-area: gesture_graph;
+      }
+
+      .proximity_value {
+        grid-area: proximity_value;
+      }
+
+      .proximity_graph {
+        grid-area: proximity_graph;
+      }
+
+      .imu_graph {
+        grid-area: imu_graph;
+      }
+
+      .microphone_graph {
+        grid-area: microphone_graph;
+      }
+
+      .sidebar {
+        grid-area: sidebar;
+      }
+
+    </style>
+  </head>
+  <body>
+
+    <div class="grid-container">
+      <div class="header">
+        <h1>Sandbox Electron</h1>
+        We are using Node.js <span id="node-version"></span>, Chromium <span id="chrome-version"></span>, and Electron
+        <span id="electron-version"></span>.
+      </div>
+      <div class="connection_bar">
+        <button id='btnGetPorts'>Get ports</button>
+        <button id='btnConnect'>Connect</button>
+        <button id='btnDisconnect'>Disconnect</button>
+        <button id='btnTest'>Test</button>
+      </div>
+
+      <div class="temp_value"><h1 id="temp_value">0ºC</h1></div>
+      <div id="temp_graph" class="temp_graph"></div>
+
+      <div class="pressure_value"><h1 id="pressure_value">101 hPa</h1></div>
+      <div id="pressure_graph" class="pressure_graph"></div>
+
+      <div id="humidity_value" class="humidity_value"><h1>50%</h1></div>
+      <div id="humidity_graph" class="humidity_graph"></div>
+
+      <div id="gesture_value" class="gesture_value"><h1>UP</h1></div>
+      <div id="gesture_graph" class="gesture_graph"></div>
+
+      <div id="proximity_value" class="proximity_value"><h1>100</h1></div>
+      <div id="proximity_graph" class="proximity_graph"></div>
+      <div id="imu_graph" class="imu_graph"></div>
+      <div id="microphone_graph" class="microphone_graph"></div>
+      <div id="sidebar" class="sidebar">
+        <ul>
+          <li>Dashboard</li>
+          <li>Serial Port</li>
+        </ul>
+      </div>
+    </div>
+
+
+    <script>
+      const {ipcRenderer} = require('electron');
+      const tableify = require('tableify')
+
+      var time = 0
+      var temp, pressure, humidity, gesture, proximity, imu, mic
+
+      google.charts.load('current', {packages: ['corechart', 'line']});
+      google.charts.setOnLoadCallback(() => {
+        tempGraph = new google.visualization.LineChart(document.getElementById('temp_graph'));
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'time');
+        data.addColumn('number', 'temp');
+
+        pressureGraph = new google.visualization.LineChart(document.getElementById('pressure_graph'));
+        humidityGraph = new google.visualization.LineChart(document.getElementById('humidity_graph'));
+        gestureGraph = new google.visualization.LineChart(document.getElementById('gesture_graph'));
+        proximityGraph = new google.visualization.LineChart(document.getElementById('proximity_graph'));
+        imuGraph = new google.visualization.LineChart(document.getElementById('imu_graph'));
+        micGraph = new google.visualization.LineChart(document.getElementById('microphone_graph'));
+      });
+
+      var tempData = []
+
+      const updateTemp = (time, temp) => {
+        // var data = new google.visualization.DataTable();
+        // data.addColumn('number', 'time');
+        // data.addColumn('number', 'temp');
+
+        if (tempData.length == 50) {
+          tempData.shift();
+        }
+
+        tempData.push([time, temp])
+        data.addRows(tempData)
+
+        tempGraph.draw(data, {hAxis: {title: 'Time'}, vAxis: {title: 'Temperature'}});
+        document.getElementById('temp_value').innerHTML = temp + 'ºC'
+      }
+
+      const updatePressure = (pressure) => {
+        pressureGraph.draw(data, options);
+      }
+
+      const updateHumidity = (temp) => {
+        humidityGraph.draw(data, options);
+      }
+
+      const updateGesture = (temp) => {
+        gestureGraph.draw(data, options);
+      }
+
+      const updateProximity = (temp) => {
+        proximityGraph.draw(data, options);
+      }
+
+      const updateImu = (x, y, z) => {
+        imuGraph.draw(data, options);
+      }
+
+      const updateMic = (mic) => {
+        micGraph.draw(data, options);
+      }
+
+      const updateGraphs = (data) => {
+        time++
+        var entry = data.split(',')
+
+        updateTemp(time, parseInt(entry[0], 10))
+        updatePressure(time, parseInt(entry[1], 10))
+        updateHumidity(time, parseInt(entry[2], 10))
+        updateImu(time, parseInt(entry[3], 10), parseInt(entry[4], 10), parseInt(entry[5], 10))
+        updateGesture(time, parseInt(entry[6], 10), parseInt(entry[7], 10), parseInt(entry[8], 10))
+      }
+
+      ipcRenderer.on("sp:data", (event, data) => {
+        // console.log(data)
+        updateGraphs(data)
+      })
+
+      document.getElementById('btnConnect').onclick = () => connect("/dev/tty.usbserial-14240")
+
+      document.getElementById('btnDisconnect').onclick = () => disconnect()
+
+      document.getElementById('btnTest').onclick = () => test()
+
+      document.getElementById('btnGetPorts').onclick = () => {
+        getports().then((ports = []) => {
+          tableHTML = tableify(ports)
+          document.getElementById('ports').innerHTML = tableHTML
+        }).catch(err => {
+          console.log("error: " + err)
+        })
+      }
+
+    </script>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

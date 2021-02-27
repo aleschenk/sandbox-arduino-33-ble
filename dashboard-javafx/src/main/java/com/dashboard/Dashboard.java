@@ -12,7 +12,7 @@ import javafx.scene.layout.GridPane;
 import java.net.URL;
 import java.util.Date;
 import java.util.ResourceBundle;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -29,15 +29,10 @@ public class Dashboard implements Initializable {
   @FXML
   private LineChart<String, Number> imuChart;
 
-//  @FXML
-//  private ObservableList<XYChart.Series<Number, Number>> imuSeries;
-//
-//  @FXML
-//  private ObservableList<XYChart.Data<Number, Number>> imuData;
+  private final ScheduledExecutorService scheduledExecutorService;
 
-  public Dashboard() {
-//    imuData = FXCollections.observableArrayList();
-//    imuSeries = FXCollections.observableArrayList();
+  public Dashboard(final ScheduledExecutorService scheduledExecutorService) {
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   public void x() {
@@ -81,7 +76,6 @@ public class Dashboard implements Initializable {
     series.getData().add(new XYChart.Data<String, Number>("1", 2));
     imuChart.getData().add(series);
     // put dummy data onto graph per second
-    var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
     var ref = new Object() {
       int time = 0;
