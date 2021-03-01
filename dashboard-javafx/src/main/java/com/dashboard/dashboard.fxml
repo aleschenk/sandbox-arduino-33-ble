@@ -4,7 +4,6 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-
 <BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dashboard.Dashboard">
    <center>
       <GridPane fx:id="gridPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="768.0" prefWidth="1024.0">
@@ -34,8 +33,9 @@
    <top>
       <FlowPane hgap="20.0" BorderPane.alignment="CENTER">
          <children>
-            <ComboBox fx:id="portsComboBox" prefWidth="150.0" />
+            <ComboBox fx:id="portsComboBox" prefWidth="400.0" />
             <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" />
+            <Button fx:id="disconnectButton" mnemonicParsing="false" text="Disconnect" />
             <Button fx:id="startButton" disable="true" mnemonicParsing="false" text="Start" />
          </children>
          <padding>

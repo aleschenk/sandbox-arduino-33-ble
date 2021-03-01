@@ -8,7 +8,9 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 
 import java.net.URL;
@@ -31,9 +33,18 @@ public class Dashboard implements Initializable {
   @FXML
   private ComboBox<SerialPort> portsComboBox;
 
+  @FXML
+  private Button connectButton;
+
+  @FXML
+  private Button disconnectButton;
+
   private final ScheduledExecutorService scheduledExecutorService;
 
-  public Dashboard(final ScheduledExecutorService scheduledExecutorService) {
+  private final Nano33Service nano33Service;
+
+  public Dashboard(final Nano33Service nano33Service, final ScheduledExecutorService scheduledExecutorService) {
+    this.nano33Service = nano33Service;
     this.scheduledExecutorService = scheduledExecutorService;
   }
 
@@ -61,8 +72,37 @@ public class Dashboard implements Initializable {
 
   @Override
   public void initialize(final URL location, final ResourceBundle resources) {
-    SerialPort[] commPorts = SerialPort.getCommPorts();
-    portsComboBox.setItems(FXCollections.observableArrayList(commPorts));
+    disconnectButton.setOnAction(event -> {
+      var selectedPort = portsComboBox.getSelectionModel().getSelectedItem();
+      selectedPort.closePort();
+    });
+
+    connectButton.setOnAction(event -> {
+      var selectedPort = portsComboBox.getSelectionModel().getSelectedItem();
+      if (selectedPort.isOpen()) {
+        connectButton.setText("Disconnect");
+      }
+    });
+
+    nano33Service.onReadHandler(data -> {
+      
+    });
+
+//    Stream.of(commPorts).forEach(port -> {
+//      System.out.println(
+//        port.getDescriptivePortName()
+//          + " -> " + port.getPortDescription()
+//          + " -> " + port.getSystemPortName());
+//    });
+
+    portsComboBox.setItems(FXCollections.observableArrayList(SerialPort.getCommPorts()));
+    portsComboBox.setCellFactory(lv -> new ListCell<>() {
+      @Override
+      protected void updateItem(final SerialPort item, final boolean empty) {
+        super.updateItem(item, empty);
+        setText(empty ? "" : item.getDescriptivePortName() + "->" + item.getPortDescription());
+      }
+    });
 
     Tile tempGauge = gauge("Temperature", "ºC");
     Tile humidityGauge = gauge("Humidity", "%");

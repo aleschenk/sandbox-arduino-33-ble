@@ -1,16 +1,9 @@
 package com.dashboard;
 
-import com.fazecast.jSerialComm.SerialPort;
+public interface Nano33Service {
 
-public class Nano33Service {
-
-  public SerialPort[] getPorts() {
-    return SerialPort.getCommPorts();
-  }
-
-  public void open() {
-//    SerialPort serialPort = SerialPort.getCommPort(serialPortName);
-  }
-
+  void onReadHandler(final Nano33ServiceSerial.OnReadHandler<byte[]> handler);
+  
+  void close();
 
 }
