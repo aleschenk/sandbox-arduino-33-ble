@@ -2,6 +2,8 @@ package com.dashboard;
 
 import com.fazecast.jSerialComm.SerialPort;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class Nano33ServiceSerial implements Nano33Service {
 
   public interface OnReadHandler<T> {
@@ -13,7 +15,7 @@ public class Nano33ServiceSerial implements Nano33Service {
   private Thread pollingWorker;
 
   private SerialPort serialPort;
-  
+
   private boolean pollingActive = false;
 
   private class SerialWorker implements Runnable {
@@ -35,8 +37,12 @@ public class Nano33ServiceSerial implements Nano33Service {
         }
         byte[] readBuffer = new byte[serialPort.bytesAvailable()];
         int numRead = serialPort.readBytes(readBuffer, readBuffer.length);
-        System.out.println("Read " + numRead + " bytes.");
-        handler.readEvent(readBuffer);
+//        System.out.println("Read " + numRead + " bytes.");
+        String data = new String(readBuffer, UTF_8);
+//        System.out.print(numRead + ": " + data);
+//        if (data.endsWith("\n")) {
+        handler.readEvent(data);
+//        }
       }
     }
 
@@ -53,7 +59,7 @@ public class Nano33ServiceSerial implements Nano33Service {
     pollingActive = false;
   }
 
-  public void onReadHandler(final OnReadHandler<byte[]> handler) {
+  public void onReadHandler(final OnReadHandler<String> handler) {
     this.handler = handler;
   }
 
@@ -64,6 +70,7 @@ public class Nano33ServiceSerial implements Nano33Service {
     }
 
     if (serialPort.isOpen()) {
+      stopPolling();
       serialPort.closePort();
     }
   }
@@ -74,6 +81,7 @@ public class Nano33ServiceSerial implements Nano33Service {
     this.serialPort.setBaudRate(9600);
     this.serialPort.openPort();
     pollingWorker = new Thread(new SerialWorker(this.serialPort));
+    startPolling();
   }
 
 }

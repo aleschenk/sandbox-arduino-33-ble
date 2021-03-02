@@ -8,7 +8,7 @@ public interface Nano33Service {
 
   void stopPolling();
 
-  void onReadHandler(final Nano33ServiceSerial.OnReadHandler<byte[]> handler);
+  void onReadHandler(final Nano33ServiceSerial.OnReadHandler<String> handler);
 
   void close();
 

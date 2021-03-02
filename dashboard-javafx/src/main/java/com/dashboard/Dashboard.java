@@ -3,7 +3,6 @@ package com.dashboard;
 import com.fazecast.jSerialComm.SerialPort;
 import eu.hansolo.tilesfx.Tile;
 import eu.hansolo.tilesfx.TileBuilder;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -16,8 +15,6 @@ import javafx.scene.layout.GridPane;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 public class Dashboard implements Initializable {
 
@@ -70,24 +67,82 @@ public class Dashboard implements Initializable {
       .build();
   }
 
-  private void toggleButtons(final boolean isConnectionOpen) {
-    connectButton.setDisable(!isConnectionOpen);
-    disconnectButton.setDisable(isConnectionOpen);
+  private void setButtonState(final boolean connect, final boolean disconnect) {
+    connectButton.setDisable(connect);
+    disconnectButton.setDisable(disconnect);
   }
-  
+
   @Override
   public void initialize(final URL location, final ResourceBundle resources) {
-    disconnectButton.setOnAction(event -> nano33Service.close());
+    Tile tempGauge = gauge("Temperature", "ºC");
+    tempGauge.setMaxValue(140);
+
+    Tile humidityGauge = gauge("Humidity", "%");
+    humidityGauge.setMaxValue(100);
+
+    Tile pressureGauge = gauge("Pressure", "hPa");
+    pressureGauge.setMaxValue(200);
+
+    XYChart.Series<String, Number> seriesX = new XYChart.Series();
+    XYChart.Series<String, Number> seriesY = new XYChart.Series();
+    XYChart.Series<String, Number> seriesZ = new XYChart.Series();
+
+    var ref = new Object() {
+      int time = 0;
+    };
+
+    disconnectButton.setOnAction(event -> {
+      nano33Service.close();
+      setButtonState(false, true);
+    });
 
     connectButton.setOnAction(event -> {
       var selectedPort = portsComboBox.getSelectionModel().getSelectedItem();
       nano33Service.connect(selectedPort);
-      if (selectedPort.isOpen()) {
-        toggleButtons(selectedPort.isOpen());
-      }
+      setButtonState(true, false);
     });
 
     nano33Service.onReadHandler(data -> {
+      ref.time++;
+
+//      sprintf(str, "%.2f,%.2f,%2.f,%2.f,%2.f,%2.f,%d,%d,%d,%d,%d\n", temperature, humidity, pressure, x, y, z, r, g, b, proximity, gesture);
+      data = data.replace("\n", "");
+      String[] value = data.split(",");
+
+      float temperature = Float.valueOf(value[0]);
+      float humidity = Float.valueOf(value[1]);
+      float pressure = Float.valueOf(value[2]);
+      float x = Float.valueOf(value[3]);
+      float y = Float.valueOf(value[4]);
+      float z = Float.valueOf(value[5]);
+      int r = Integer.parseInt(value[6]);
+      int g = Integer.parseInt(value[7]);
+      int b = Integer.parseInt(value[8]);
+      int proximity = Integer.parseInt(value[9]);
+      int gesture = Integer.parseInt(value[10]);
+
+      tempGauge.setValue(temperature);
+      humidityGauge.setValue(humidity);
+      pressureGauge.setValue(pressure);
+
+      seriesX.getData().add(new XYChart.Data<>(Integer.toString(ref.time), x));
+      seriesY.getData().add(new XYChart.Data<>(Integer.toString(ref.time), y));
+      seriesZ.getData().add(new XYChart.Data<>(Integer.toString(ref.time), z));
+
+      if (seriesX.getData().size() > WINDOW_SIZE) {
+        seriesX.getData().remove(0);
+      }
+      if (seriesY.getData().size() > WINDOW_SIZE) {
+        seriesY.getData().remove(0);
+      }
+      if (seriesZ.getData().size() > WINDOW_SIZE) {
+        seriesZ.getData().remove(0);
+      }
+//        if (seriesR.getData().size() > WINDOW_SIZE) {
+//          seriesR.getData().remove(0);
+//        }
+
+//      29.76,48.77,101, 0,-0, 1,10,6,5,0,-1
 //      Platform.runLater();
     });
 
@@ -107,13 +162,6 @@ public class Dashboard implements Initializable {
       }
     });
 
-    Tile tempGauge = gauge("Temperature", "ºC");
-    Tile humidityGauge = gauge("Humidity", "%");
-    Tile pressureGauge = gauge("Pressure", "hPa");
-
-    XYChart.Series<String, Number> seriesX = new XYChart.Series();
-    XYChart.Series<String, Number> seriesY = new XYChart.Series();
-    XYChart.Series<String, Number> seriesZ = new XYChart.Series();
 
     XYChart.Series<String, Number> seriesR = new XYChart.Series();
 
@@ -126,38 +174,35 @@ public class Dashboard implements Initializable {
     gridPane.add(imuChart, 0, 1, 3, 1);
     gridPane.add(gestureChart, 0, 2, 3, 1);
 
-    var ref = new Object() {
-      int time = 0;
-    };
 
-    scheduledExecutorService.scheduleAtFixedRate(() -> {
-      Integer randomX = ThreadLocalRandom.current().nextInt(10);
-      Integer randomY = ThreadLocalRandom.current().nextInt(10);
-      Integer randomZ = ThreadLocalRandom.current().nextInt(10);
-      Integer randomR = ThreadLocalRandom.current().nextInt(10);
-
-      Platform.runLater(() -> {
-//        Date now = new Date();
-        ref.time++;
-        seriesX.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomX));
-        seriesY.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomY));
-        seriesZ.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomZ));
-        seriesR.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomR));
-
-        if (seriesX.getData().size() > WINDOW_SIZE) {
-          seriesX.getData().remove(0);
-        }
-        if (seriesY.getData().size() > WINDOW_SIZE) {
-          seriesY.getData().remove(0);
-        }
-        if (seriesZ.getData().size() > WINDOW_SIZE) {
-          seriesZ.getData().remove(0);
-        }
-        if (seriesR.getData().size() > WINDOW_SIZE) {
-          seriesR.getData().remove(0);
-        }
-      });
-    }, 0, 100, TimeUnit.MILLISECONDS);
+//    scheduledExecutorService.scheduleAtFixedRate(() -> {
+//      Integer randomX = ThreadLocalRandom.current().nextInt(10);
+//      Integer randomY = ThreadLocalRandom.current().nextInt(10);
+//      Integer randomZ = ThreadLocalRandom.current().nextInt(10);
+//      Integer randomR = ThreadLocalRandom.current().nextInt(10);
+//
+//      Platform.runLater(() -> {
+////        Date now = new Date();
+//        ref.time++;
+//        seriesX.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomX));
+//        seriesY.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomY));
+//        seriesZ.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomZ));
+//        seriesR.getData().add(new XYChart.Data<>(Integer.toString(ref.time), randomR));
+//
+//        if (seriesX.getData().size() > WINDOW_SIZE) {
+//          seriesX.getData().remove(0);
+//        }
+//        if (seriesY.getData().size() > WINDOW_SIZE) {
+//          seriesY.getData().remove(0);
+//        }
+//        if (seriesZ.getData().size() > WINDOW_SIZE) {
+//          seriesZ.getData().remove(0);
+//        }
+//        if (seriesR.getData().size() > WINDOW_SIZE) {
+//          seriesR.getData().remove(0);
+//        }
+//      });
+//    }, 0, 100, TimeUnit.MILLISECONDS);
   }
 
 }

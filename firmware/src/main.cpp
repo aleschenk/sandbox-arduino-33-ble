@@ -257,12 +257,19 @@ void loop() {
   readGestureColor(r, g, b);
   int proximity = 0; //readProximity();
   int gesture = GESTURE_NONE; // readGesture();
+  char str[120];
+  memset(&str, '\0', 120);
 
+  sprintf(str, "%.2f,%.2f,%2.f,%2.f,%2.f,%2.f,%d,%d,%d,%d,%d\n", temperature, humidity, pressure, x, y, z, r, g, b, proximity, gesture);
+  Serial.print(str);
+
+/*
   Serial.print(F("h: ")); Serial.print(humidity); Serial.print(F("%\t"));
   Serial.print(F("t: ")); Serial.print(temperature); Serial.print(F("°C\t"));
   Serial.print(F("p: ")); Serial.print(pressure); Serial.print(F(" hPa\t"));
   Serial.print("x: "); Serial.print(x); Serial.print("\ty: "); Serial.print(y); Serial.print("\tz: "); Serial.print(z); Serial.print("\t");
   Serial.print("r: "); Serial.print(r); Serial.print("\tg: "); Serial.print(g); Serial.print("\tb: "); Serial.print(b); Serial.print("\t");
   Serial.print("pr: "); Serial.print(proximity); Serial.print("\tge: "); Serial.println(gestureToChar(gesture));
+  */
 }
 
