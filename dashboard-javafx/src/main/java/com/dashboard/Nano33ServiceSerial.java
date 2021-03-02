@@ -13,13 +13,8 @@ public class Nano33ServiceSerial implements Nano33Service {
   private Thread pollingWorker;
 
   private SerialPort serialPort;
-
-  public void open(final SerialPort serialPort) {
-    this.serialPort = serialPort;
-    this.serialPort.openPort();
-    this.serialPort.setBaudRate(9600);
-    pollingWorker = new Thread(new SerialWorker(this.serialPort));
-  }
+  
+  private boolean pollingActive = false;
 
   private class SerialWorker implements Runnable {
     private final SerialPort serialPort;
@@ -30,7 +25,7 @@ public class Nano33ServiceSerial implements Nano33Service {
 
     @Override
     public void run() {
-      while (true) {
+      while (pollingActive) {
         while (serialPort.bytesAvailable() == 0) {
           try {
             Thread.sleep(20);
@@ -47,12 +42,15 @@ public class Nano33ServiceSerial implements Nano33Service {
 
   }
 
+  @Override
   public synchronized void startPolling() {
+    pollingActive = true;
     pollingWorker.start();
   }
 
+  @Override
   public synchronized void stopPolling() {
-
+    pollingActive = false;
   }
 
   public void onReadHandler(final OnReadHandler<byte[]> handler) {
@@ -68,6 +66,14 @@ public class Nano33ServiceSerial implements Nano33Service {
     if (serialPort.isOpen()) {
       serialPort.closePort();
     }
+  }
+
+  @Override
+  public void connect(final SerialPort selectedPort) {
+    this.serialPort = selectedPort;
+    this.serialPort.setBaudRate(9600);
+    this.serialPort.openPort();
+    pollingWorker = new Thread(new SerialWorker(this.serialPort));
   }
 
 }

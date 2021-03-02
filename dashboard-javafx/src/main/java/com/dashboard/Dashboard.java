@@ -70,22 +70,25 @@ public class Dashboard implements Initializable {
       .build();
   }
 
+  private void toggleButtons(final boolean isConnectionOpen) {
+    connectButton.setDisable(!isConnectionOpen);
+    disconnectButton.setDisable(isConnectionOpen);
+  }
+  
   @Override
   public void initialize(final URL location, final ResourceBundle resources) {
-    disconnectButton.setOnAction(event -> {
-      var selectedPort = portsComboBox.getSelectionModel().getSelectedItem();
-      selectedPort.closePort();
-    });
+    disconnectButton.setOnAction(event -> nano33Service.close());
 
     connectButton.setOnAction(event -> {
       var selectedPort = portsComboBox.getSelectionModel().getSelectedItem();
+      nano33Service.connect(selectedPort);
       if (selectedPort.isOpen()) {
-        connectButton.setText("Disconnect");
+        toggleButtons(selectedPort.isOpen());
       }
     });
 
     nano33Service.onReadHandler(data -> {
-      
+//      Platform.runLater();
     });
 
 //    Stream.of(commPorts).forEach(port -> {
