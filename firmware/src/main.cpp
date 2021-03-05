@@ -181,7 +181,21 @@ void readIMU(float &x, float &y, float &z) {
   if (IMU.accelerationAvailable()) {
     IMU.readAcceleration(x, y, z);
   }
+
 }
+
+void readGyroscope(float &x, float &y, float &z) {
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(x, y, z);
+  }
+}
+
+void readMagneticField(float &x, float &y, float &z) {
+  if (IMU.magneticFieldAvailable()) {
+    IMU.readMagneticField(x, y, z);
+  }
+}
+
 
 void readGestureColor(int &r, int &g, int &b) {
   // check if a color reading is available
@@ -246,21 +260,23 @@ char gestureToChar(int gesture) {
 }
 
 void loop() {
-  float x, y, z;
+  float ax, ay, az, gx, gy, gz, mx, my, mz;
   int r, g, b;
 
   // delay(1000);
   float humidity = readHumidity();
   float temperature = readTemperature();
   float pressure = readPressureSensor();
-  readIMU(x, y, z);
+  readIMU(ax, ay, az);
+  readGyroscope(gx, gy, gz);
+  readMagneticField(mx, my, mz);
   readGestureColor(r, g, b);
   int proximity = 0; //readProximity();
   int gesture = GESTURE_NONE; // readGesture();
   char str[120];
   memset(&str, '\0', 120);
 
-  sprintf(str, "%.2f,%.2f,%2.f,%2.f,%2.f,%2.f,%d,%d,%d,%d,%d\n", temperature, humidity, pressure, x, y, z, r, g, b, proximity, gesture);
+  sprintf(str, "%.2f,%.2f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%d,%d,%d,%d,%d\n", temperature, humidity, pressure, ax, ay, az, gx, gy, gz, mx, my, mz, r, g, b, proximity, gesture);
   Serial.print(str);
 
 /*
