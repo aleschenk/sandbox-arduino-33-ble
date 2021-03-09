@@ -37,6 +37,7 @@
             <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" />
             <Button fx:id="disconnectButton" disable="true" mnemonicParsing="false" text="Disconnect" />
             <Button fx:id="startButton" disable="true" mnemonicParsing="false" text="Start" />
+            <Button fx:id="stopButton" disable="true" mnemonicParsing="false" text="Stop" />
          </children>
          <padding>
             <Insets bottom="10.0" left="10.0" top="10.0" />

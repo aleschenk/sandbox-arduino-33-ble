@@ -5,6 +5,9 @@ import com.fazecast.jSerialComm.SerialPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Nano33ServiceSerial implements Nano33Service {
+  private static final String START_POLLING_COMMAND = "START";
+
+  private static final String STOP_POLLING_COMMAND = "STOP";
 
   public interface OnReadHandler<T> {
     void readEvent(final T data);
@@ -51,12 +54,14 @@ public class Nano33ServiceSerial implements Nano33Service {
   @Override
   public synchronized void startPolling() {
     pollingActive = true;
-    pollingWorker.start();
+    serialPort.writeBytes(START_POLLING_COMMAND.getBytes(UTF_8), START_POLLING_COMMAND.length());
+    new Thread(new SerialWorker(this.serialPort)).start();
   }
 
   @Override
   public synchronized void stopPolling() {
     pollingActive = false;
+    serialPort.writeBytes(STOP_POLLING_COMMAND.getBytes(UTF_8), STOP_POLLING_COMMAND.length());
   }
 
   public void onReadHandler(final OnReadHandler<String> handler) {
@@ -80,8 +85,6 @@ public class Nano33ServiceSerial implements Nano33Service {
     this.serialPort = selectedPort;
     this.serialPort.setBaudRate(9600);
     this.serialPort.openPort();
-    pollingWorker = new Thread(new SerialWorker(this.serialPort));
-    startPolling();
   }
 
 }

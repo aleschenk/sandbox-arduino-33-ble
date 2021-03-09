@@ -172,9 +172,6 @@ void setupIMU() {
   Serial.print(F("Accelerometer sample rate = "));
   Serial.print(IMU.accelerationSampleRate());
   Serial.println(F(" Hz"));
-  Serial.println();
-  Serial.println(F("Acceleration in G's"));
-  Serial.println(F("X\tY\tZ"));
 }
 
 void readIMU(float &x, float &y, float &z) {
@@ -259,11 +256,27 @@ char gestureToChar(int gesture) {
   return 'x';
 }
 
+bool polling = false;
+
+int state = 0;
+
 void loop() {
   float ax, ay, az, gx, gy, gz, mx, my, mz;
   int r, g, b;
 
-  // delay(1000);
+  if (Serial.available() > 0) {
+    String command = Serial.readString();
+    if (command.equals("START")) {
+      polling = true;
+    } else if (command.equals("STOP")) {
+      polling = false;
+    }
+  }
+
+  if (!polling) {
+    return ;
+  }
+
   float humidity = readHumidity();
   float temperature = readTemperature();
   float pressure = readPressureSensor();
@@ -273,19 +286,38 @@ void loop() {
   readGestureColor(r, g, b);
   int proximity = 0; //readProximity();
   int gesture = GESTURE_NONE; // readGesture();
-  char str[120];
-  memset(&str, '\0', 120);
+  
+  /*
+  char str1[70], str2[20];
+  memset(&str1, '\0', 70);
+  memset(&str2, '\0', 20);
 
-  sprintf(str, "%.2f,%.2f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%2.f,%d,%d,%d,%d,%d\n", temperature, humidity, pressure, ax, ay, az, gx, gy, gz, mx, my, mz, r, g, b, proximity, gesture);
-  Serial.print(str);
+  // [30.43,48.48,75.71,0.14,0.19,0.96,0.43,-0.61,0.37,-1.43,26.78
+  // 2.14,9,6,5,0,-1
 
-/*
-  Serial.print(F("h: ")); Serial.print(humidity); Serial.print(F("%\t"));
-  Serial.print(F("t: ")); Serial.print(temperature); Serial.print(F("°C\t"));
-  Serial.print(F("p: ")); Serial.print(pressure); Serial.print(F(" hPa\t"));
-  Serial.print("x: "); Serial.print(x); Serial.print("\ty: "); Serial.print(y); Serial.print("\tz: "); Serial.print(z); Serial.print("\t");
-  Serial.print("r: "); Serial.print(r); Serial.print("\tg: "); Serial.print(g); Serial.print("\tb: "); Serial.print(b); Serial.print("\t");
-  Serial.print("pr: "); Serial.print(proximity); Serial.print("\tge: "); Serial.println(gestureToChar(gesture));
+  sprintf(str1, "[%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,", temperature, humidity, pressure, ax, ay, az, gx, gy, gz, mx, my);
+  sprintf(str2, "%.2f,%d,%d,%d,%d,%d\n", mz, r, g, b, proximity, gesture);
+
+  Serial.print(str1);
+  Serial.print(str2);
   */
+
+ Serial.print(temperature); Serial.print(",");
+ Serial.print(humidity); Serial.print(",");
+ Serial.print(pressure); Serial.print(",");
+ Serial.print(ax); Serial.print(",");
+ Serial.print(ay); Serial.print(",");
+ Serial.print(az); Serial.print(",");
+ Serial.print(gx); Serial.print(",");
+ Serial.print(gy); Serial.print(",");
+ Serial.print(gz); Serial.print(",");
+ Serial.print(mx); Serial.print(",");
+ Serial.print(my); Serial.print(",");
+ Serial.print(mz); Serial.print(",");
+ Serial.print(r); Serial.print(",");
+ Serial.print(g); Serial.print(",");
+ Serial.print(b); Serial.print(",");
+ Serial.print(proximity); Serial.print(",");
+ Serial.println(gesture);
 }
 
